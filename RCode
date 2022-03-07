@@ -1,0 +1,244 @@
+
+# ==============================Linear Regression for credit data========================
+library(class)
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+dataset.train <- data.frame(train.data)
+
+fit.lm <- lm(y~.,data=dataset.train)
+
+
+yhat <- fit.lm$fit
+predicted_class_labels <- ifelse(yhat>0.5,1,0)
+
+
+dataset.test<-data.frame(test.data)
+
+ynew<-predict(fit.lm,dataset.test)
+
+predicted_new_class_labels <- ifelse(ynew>0.5,1,0)
+
+
+corr.class.rate <- (sum(dataset.test[,1] == predicted_new_class_labels) / length(dataset.test[,1])*100)
+print(corr.class.rate)
+
+#=====================credit data K Nearest Neighbour for k=1 and k=5 =====================
+library(class)
+library(rpart)
+library(rpart.plot)
+library(MASS)
+
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+train.data.x <- train.data[,2:25]
+y.train <- factor(train.data[,1])
+
+test.data.x <- test.data[,2:25]
+y.test <- factor(test.data[,1])
+
+y.predict.k5 <- knn(train.data.x,test.data.x,cl=y.train,k=5)
+y.predict.k1<- knn(train.data.x,test.data.x,cl=y.train,k=1)
+
+tab.k5 <- table(y.predict.k5,y.test)
+tab.k1 <- table(y.predict.k1,y.test)
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100} 
+accuracyk5 <- comp.accuracy(tab.k5)
+accuracyk1 <- comp.accuracy(tab.k1)
+print(accuracyk5)
+print(accuracyk1)
+
+# ====================================credit data cva======================================
+library(class)
+library(MASS)
+
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+data.train.cva<-lda(train.data[,-1],train.data[,1],prior=c(0.5,0.5))
+
+
+
+data.test.cva<-predict(data.train.cva, newdata=test.data[,-1])
+
+
+tab.cva<-table(test.data[,1], data.test.cva$class)
+
+
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x))))*100}
+accuracy <- comp.accuracy(tab.cva)
+
+print(accuracy)
+
+#================================credit data for lda==================================
+library(class)
+library(MASS)
+
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+
+lda<-lda(train.data[,-1],train.data[,1])
+
+ldatest<-predict(lda, newdata=test.data[,-1])
+
+tab_lda<-table(test.data[,1], ldatest$class)
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x))))*100}
+accuracy <- comp.accuracy(tab_lda)
+
+print(accuracy)
+
+
+
+#==============================credit data for qda==============================
+
+library(class)
+library(MASS)
+
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+
+
+
+data.qda <- qda(train.data[, -1], train.data[, 1]) 
+data.qda  
+
+data.test.qda <- predict(data.qda, newdata=test.data[, -1]) 
+
+
+head(data.test.qda$posterior)
+
+table(test.data[, 1], data.test.qda$class)
+
+
+tab.qda <- table(test.data[, 1], data.test.qda$class) 
+
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x))))*100}
+accuracy <- comp.accuracy(tab.qda)
+
+print(accuracy)
+
+
+#=======================credit data trees without and with pruning=============================
+
+
+library(class)
+library(rpart)
+library(rpart.plot)
+library(MASS)
+# reading in data
+data <- read.table("creditData.txt", header=TRUE)
+set.seed(2230311)
+n <- dim(data)[1]
+
+ind1 <- sample(c(1:n), round(2*n/3))
+ind2 <- setdiff(c(1:n), ind1)
+train.data <- data[ind1, ]
+test.data <- data[ind2, ] 
+
+
+#setting up train data as a data frame
+dataset.train <- data.frame(train.data)
+
+
+#=======================================trees without pruning
+
+creditrt <- rpart(y~., data=train.data, method="class")
+rpart.plot(creditrt,type=2,extra=4)
+title(main="Credit Data Unpruned Tree")
+
+datapred<-predict(creditrt, newdata=test.data, type="class")
+tab_datapred<-table(test.data[,1],datapred)
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x))))*100}
+accuracy <- comp.accuracy(tab_datapred)
+print(accuracy)
+
+#==========================================trees with pruning
+plotcp(creditrt)
+
+creditrt_prune <- rpart(y~., data=test.data, method="class",cp=0.031)
+
+creditrt_prune_pred <- predict(creditrt_prune, newdata=test.data,type="class")
+tab_creditrt_prune_pred <- table(test.data[,1], creditrt_prune_pred)
+
+
+rpart.plot(creditrt_prune,type=2,extra=4) 
+
+title(main="Credit Data pruned Tree")
+
+comp.accuracy <- function(x){sum(diag(x)/(sum(rowSums(x))))*100}
+accuracy <- comp.accuracy(tab_creditrt_prune_pred)
+
+print(accuracy)
+
+#================================= credit data random forest========================
+
+library(tidyverse)
+library(caret)
+library(randomForest)
+set.seed(2230311)
+
+data <- read.table("creditData.txt", header=TRUE)
+
+
+
+
+training.samples<-data$y%>%createDataPartition(p=0.667, list=FALSE)
+train.data<-data[training.samples,]
+test.data<-data[-training.samples,]
+
+
+
+
+model<-train(
+  as.factor(y)~.,data=train.data,method="rf",
+  trControl= trainControl("cv",number = 10),
+  importance=TRUE
+)
+
+
+
+predicted.classes<-model%>%predict(test.data)
+
+
+
+forrsest.accuracy<-(mean(predicted.classes==test.data$y)*100)
+
+print(forrsest.accuracy)
